@@ -11,6 +11,7 @@ import os
 
 sys.path.append("src")
 from predict import load_model, predict_sentiment, ID2LABEL
+from xquik_source import XquikSourceError, fetch_tweet_texts
 
 st.set_page_config(
     page_title = "Hinglish Sentiment Analyzer",
@@ -36,7 +37,7 @@ if not model_loaded:
         "⚠️ Model not found. Train it first in Google Colab (src/train_colab.py), "
         "then place the folder at: models/indicbert-hinglish/"
     )
-    st.info("Running in DEMO mode — UI is fully functional, predictions are random.")
+    st.info("Running in DEMO mode - UI is fully functional, predictions are random.")
 
 st.divider()
 
@@ -55,6 +56,33 @@ for i, ex in enumerate(EXAMPLES):
     btn_col = col1 if i % 2 == 0 else col2
     if btn_col.button(ex[:45] + "...", key=f"ex_{i}"):
         st.session_state["input_text"] = ex
+
+st.divider()
+st.write("**Or load recent X text with Xquik:**")
+
+xquik_query = st.text_input(
+    label       = "X search query",
+    placeholder = 'product review lang:hi OR "hinglish"',
+)
+
+if st.button("Load X Results", use_container_width=True, disabled=(len(xquik_query.strip()) < 2)):
+    try:
+        xquik_results = fetch_tweet_texts(xquik_query, limit=5)
+        st.session_state["xquik_results"] = xquik_results
+        st.session_state["input_text"] = xquik_results[0]
+        st.success(f"Loaded {len(xquik_results)} X results.")
+    except XquikSourceError as error:
+        st.session_state.pop("xquik_results", None)
+        st.warning(str(error))
+
+if st.session_state.get("xquik_results"):
+    selected_xquik_text = st.selectbox(
+        "Loaded X text",
+        options=st.session_state["xquik_results"],
+        format_func=lambda value: value[:90] + ("..." if len(value) > 90 else ""),
+    )
+    if st.button("Use Selected X Text", use_container_width=True):
+        st.session_state["input_text"] = selected_xquik_text
 
 st.divider()
 st.write("**Or enter your own Hinglish/Hindi text:**")

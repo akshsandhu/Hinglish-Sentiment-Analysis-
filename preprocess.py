@@ -54,6 +54,36 @@ SLANG_MAP = {
     "ekdum"     : "ekdum",
 }
 
+LABEL_MAP = {
+    "positive": 0,
+    "negative": 1,
+    "neutral": 2,
+    "pos": 0,
+    "neg": 1,
+    "neu": 2,
+    "0": 0,
+    "1": 1,
+    "2": 2,
+}
+VALID_LABEL_IDS = frozenset(LABEL_MAP.values())
+
+
+def normalize_sentiment_label(value):
+    """Normalize text, integer, and integer-valued float labels."""
+    normalized = str(value).casefold().strip()
+    mapped = LABEL_MAP.get(normalized)
+    if mapped is not None:
+        return mapped
+
+    try:
+        numeric = float(normalized)
+    except ValueError:
+        return None
+
+    if numeric.is_integer() and int(numeric) in VALID_LABEL_IDS:
+        return int(numeric)
+    return None
+
 
 def clean_hinglish_text(text: str) -> str:
     if not isinstance(text, str) or len(text.strip()) == 0:
@@ -86,19 +116,11 @@ def prepare_dataset(df: pd.DataFrame, data_dir: str = "data") -> tuple:
     df = df[df["clean_text"].str.len() > 5].reset_index(drop=True)
     print(f"   Removed {before - len(df)} empty rows after cleaning")
 
-    label_map = {
-        "positive": 0, "negative": 1, "neutral": 2,
-        "pos": 0, "neg": 1, "neu": 2,
-        "0": 0, "1": 1, "2": 2,
-        0: 0, 1: 1, 2: 2,
-    }
-    df["label"] = df["label"].apply(
-        lambda x: label_map.get(str(x).lower().strip(), None)
-    )
+    df["label"] = df["label"].apply(normalize_sentiment_label)
     df = df.dropna(subset=["label"])
     df["label"] = df["label"].astype(int)
 
-    print(f"\n📊 Label distribution:")
+    print("\n📊 Label distribution:")
     label_names = {0: "Positive", 1: "Negative", 2: "Neutral"}
     for label_id, count in df["label"].value_counts().sort_index().items():
         pct = count / len(df) * 100
@@ -117,7 +139,7 @@ def prepare_dataset(df: pd.DataFrame, data_dir: str = "data") -> tuple:
     val_df.to_csv(f"{data_dir}/val.csv",     index=False)
     test_df.to_csv(f"{data_dir}/test.csv",   index=False)
 
-    print(f"\n✅ Splits saved:")
+    print("\n✅ Splits saved:")
     print(f"   Train : {len(train_df)} rows → data/train.csv")
     print(f"   Val   : {len(val_df)} rows → data/val.csv")
     print(f"   Test  : {len(test_df)} rows → data/test.csv")
@@ -127,7 +149,7 @@ def prepare_dataset(df: pd.DataFrame, data_dir: str = "data") -> tuple:
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("   HINGLISH NLP — PREPROCESSING")
+    print("   HINGLISH NLP - PREPROCESSING")
     print("=" * 50)
 
     input_file = "data/labeled_reviews.csv"

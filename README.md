@@ -117,3 +117,5 @@ Aksh Sandhu
 LinkedIn: www.linkedin.com/in/aksh-sandhu-8282a63b7
 
 GitHub: https://github.com/akshsandhu
+
+Xquik is an independent third-party service. Not affiliated with X Corp. "Twitter" and "X" are trademarks of X Corp.
